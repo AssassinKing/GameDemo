@@ -1,0 +1,204 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<script src="/socket.io/socket.io.js"></script>
+<meta charset="utf-8">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="css/jquery.mobile-1.4.2.min.css" />
+<script src="js/jquery-1.11.1.min.js"></script>
+<script src="js/jquery.mobile-1.4.2.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+	
+<title>104510 埃有動物</title>
+
+<style type="text/css">
+html, body {
+    margin:0; padding:0; height:100%;
+}
+.headbox{
+    width:100%;
+    height:45%;
+    margin:0 auto;
+    display:table;
+}
+.sidebar{
+    position : absolute; top:45%; left:0;
+    width:50%;
+    height:55%;
+    margin:0 auto;
+    margin-bottom:0;
+    float:left;
+    display:inline-block;
+}
+.sidebody{
+    position : absolute; top:45%; left:50%;
+    width:50%;
+    height:55%;
+    margin:0 auto;
+    margin-bottom:0;
+    float:left;
+    display:inline-block;
+}
+</style>
+	
+<script>
+var socket = io.connect('http://192.168.0.184:8080');
+var running=false;
+var number;
+
+socket.on('connect', function() {
+	$('#message').html('連線成功!');
+	if(getQueryStringRegExp('room')){
+		number = getQueryStringRegExp('room');
+		socket.emit('check',number,function(result){
+			switch(result){
+				case 1:
+					pass();
+					break;
+				case 2:
+					$('#tip').html("驗證碼輸入錯誤，請重新輸入");
+					break;
+				case 3:
+					$('#tip').html("此房間人數已滿!");
+					break;
+			}
+		});
+	}
+});
+
+socket.on('gamestart',function(){
+$.mobile.changePage("#gamepad");	
+});
+socket.on('error', function(){
+	socket.socket.reconnect();
+});
+socket.on('disconnect',function(){
+	socket.socket.reconnect();
+});
+function getQueryStringRegExp(name)
+{
+    var reg = new RegExp("(^|\\?|&)"+ name +"=([^&]*)(\\s|&|$)", "i");  
+    if (reg.test(location.href)) return unescape(RegExp.$2.replace(/\+/g, " ")); return "";
+}
+function online(){
+	number = $('#number').val();
+	if(number){
+		socket.emit('check',number,function(result){
+			switch(result){
+				case 1:
+					pass();
+					break;
+				case 2:
+					$('#tip').html("驗證碼輸入錯誤，請重新輸入");
+					break;
+				case 3:
+					$('#tip').html("此房間人數已滿!");
+					break;
+			}
+		});
+	}else{
+		$('#tip').html("驗證碼為不能空白，請重新輸入");
+	}
+}
+function pass(){
+	socket.emit('adduser',number,function(data){
+		if(data == 1){			
+			$('#player1_button').fadeIn();
+			$('#other_wait1').fadeIn();
+			$('#other_wait2').hide();
+			$('#other_wait3').hide();
+			$('#other_wait4').hide();
+		}else if(data == 2){
+			$('#player1_button').hide();
+			$('#other_wait1').hide();
+			$('#other_wait2').fadeIn();
+			$('#other_wait3').hide();
+			$('#other_wait4').hide();
+		}else if(data == 3){
+			$('#player1_button').hide();
+			$('#other_wait1').hide();
+			$('#other_wait2').hide();
+			$('#other_wait3').fadeIn();
+			$('#other_wait4').hide();
+		}else if(data == 4){
+			$('#player1_button').hide();
+			$('#other_wait1').hide();
+			$('#other_wait2').hide();
+			$('#other_wait3').hide();
+			$('#other_wait4').fadeIn();
+		}
+		$.mobile.changePage("#wait_area");
+	});
+}
+
+function player1_click(){
+	socket.emit('gamestart',number);
+	$("#player1_click").attr("disabled",true); 
+}	
+
+function moveup_click(){	
+	socket.emit('moveup',number);	
+}
+
+function moveright_click(){
+	socket.emit('moveright',number);
+}	
+
+function moveleft_click(){
+	socket.emit('moveleft',number);
+}	
+
+
+					
+</script>
+	
+</head>
+ 
+<body>	
+	<div data-role="page" id="enter">
+    	<div id="message"></div> 
+		<img src="images/connect.gif" width="340" height="194">
+		<div id="tip">請輸入電腦螢幕上的一組序號</div>
+        <input type="text" name="number" id="number">
+        <button class="ui-btn" OnClick="online()" >OK</button>
+	</div>
+	
+	<div data-role="page" id="wait_area">
+		<div id="player1_button" style="display:none">
+			<div align="center"><img src="images/waiting.gif"></div>
+			<button id="player1_click" class="ui-btn" onClick="player1_click()">連線玩家準備好後按此進入</button>
+		</div>
+
+		<div id="other_wait1" style="display:none">
+			<div align="center"><br><img src="0923detail/1.png"></br></div>
+		</div>
+
+		<div id="other_wait2" style="display:none">
+			<div align="center"><img src="images/waiting.gif"></div>
+			<div align="center"><br><img src="0923detail/2.png"></br></div>
+		</div>
+
+		<div id="other_wait3" style="display:none">
+			<div align="center"><img src="images/waiting.gif"></div>
+			<div align="center"><br><img src="0923detail/3.png"></br></div>
+		</div>
+
+		<div id="other_wait4" style="display:none">
+			<div align="center"><img src="images/waiting.gif"></div>
+			<div align="center"><br><img src="0923detail/4.png"></br></div>
+		</div>
+	</div>
+	
+	<div data-role="page" id="gamepad">
+		<div class="headbox"><img src="images/up.png" width="100%" height="100%" onClick="moveup_click()"></div>
+		<div class="sidebar"><img src="images/left.png" width="100%" height="100%" onClick="moveleft_click()"></div>
+		<div class="sidebody"><img src="images/right.png" width="100%" height="100%" onClick="moveright_click()"></div>
+	</div>
+</body>
+	
+</html>

@@ -1,0 +1,1813 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta content='text/html; charset=UTF-8' http-equiv='Content-Type'>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" type="text/css" href="css/page.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery-ui-1.8.16.custom.css"/>
+<link href="css/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<script src="js/jquery-1.11.1.min.js"></script>
+<script src="js/howler.min.js"></script>
+<script src="js/game_core.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="css/bootstrap/js/bootstrap.min.js"></script>
+<script src="js/createcode.js"></script>
+<script src="js/qrcode.js"></script>
+<script src="js/Box2dWeb-2.1.a.3.js"></script>
+<script src="js/boxbox.js"></script>
+<script src="js/howler.js"></script>
+<script src="js/0923_sound.js"></script>
+	
+<title>埃~有動物</title>
+<style>
+	html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+	}
+	
+	body{
+		background:#000000;
+	}
+	
+	#menu {
+		background:  url('images/menu.jpg') no-repeat center center;
+		background-size: 100% 100%;
+		width: 100%;
+		height: 100%;
+		min-height:100%;
+	}
+	
+	#connect {
+		background:  url('images/gate.png') no-repeat center center;
+		background-size: 100% 100%;
+		width: 100%;
+		height: 100%;
+		min-height:100%;
+	}
+	
+	#ready {
+		background:  url('images/gate.png') no-repeat center center;
+		background-size: 100% 100%;
+		width: 100%;
+		height: 100%;
+		min-height:100%;
+	}
+	
+	h2{
+		margin-top: 0px;
+	}
+	
+	.img{
+		width:256px; height:136px;
+	}
+	
+	.p_btndiv{
+		position:absolute; top:50%; left:40%;
+		margin-left:-128px;
+		margin-top:-68px
+		width:256px; height:136px;
+		margin:0 auto;
+		padding:0px;
+	}
+	
+	.n_btndiv{
+		position:absolute; top:79.6%; left:72.6%;
+		margin-left:-128px;
+		margin-top:-68px
+		width:256px; height:136px;
+		margin:0 auto;
+		padding:0px;
+	}
+	
+	.movdiv{
+		background:  url('images/cartoon.gif') no-repeat center center;
+		position:relative; top:0%; left:0%;
+		width:100%; height:100%;
+		margin:0 auto;
+		padding:0px;
+	}
+	
+	.txtdiv{
+		background:  url('images/bg.jpg') no-repeat center center;
+		opacity:0.8;
+		position:relative; top:0%; left:0%;
+		width:100%; height:100%;
+		margin:0 auto;
+		padding:0px;
+	}
+	
+	.player_state{opacity: 0.4;
+		position:relative;
+		top:50%;
+		bottom:90%;
+		width="150";
+		height="185";
+	}
+</style>	 			
+</head>
+
+<body>
+<div data-role="page" id="menu">
+	<div class="p_btndiv">
+		<img class=img src="images/play.gif" onmouseover="this.src='images/play1.png';" onmouseout="this.src='images/play.gif';" onClick="start()">
+	</div>
+</div>
+
+<div data-role="page" id="connect" style="display:none">
+	<div class="movdiv">
+		<div class="n_btndiv">
+			<img class=img src="images/next.gif" onmouseover="this.src='images/next1.png';" onmouseout="this.src='images/next.gif';" onClick="nextstep()">
+		</div>
+	</div>
+</div>
+
+<div data-role="page" id="ready" style="display: none">
+	<div class="txtdiv">
+    	<h2><br>1.進入手機版瀏覽器輸入</br></h2>
+		<div id="target_url"></div>
+        <h2 style="color:red;">輸入以下<div id="gamecode"></div></h2>
+		<br>
+		<h2>2.或是使用QR Code進入頁面</h2>
+		<div id="qrcode" style="width:100px; height:100px; margin: 0px auto;"></div>
+		<br>
+		<br>
+        <h2>快來分出勝負吧！</h2>
+		<div id="player_state">
+			<img id="player1" class="player_state" src="0923detail/1.png">
+			<img id="player2" class="player_state" src="0923detail/2.png">
+			<img id="player3" class="player_state" src="0923detail/3.png">
+			<img id="player4" class="player_state" src="0923detail/4.png">
+		</div>
+	</div>
+</div>
+
+<div id="gamestage" style="display:none">
+
+<canvas id="myCanvas">
+
+<script>
+var canvasElem = document.getElementById("myCanvas");
+
+var screenx=1000;
+var screeny=600;
+
+var world = boxbox.createWorld(canvasElem,{
+  gravity: {x: 0, y: 5}, 
+  debugDraw:false,
+});	
+
+canvasElem.width=screenx;
+canvasElem.height=screeny;
+
+var background=world.createEntity({
+		name:'background',
+		image:'0923detail/background01.png',
+		spriteSheet:true,
+		spriteWidth:1024,
+		spriteHeight:768,
+		x:10,
+		y:3,
+		color:'red',
+		shape:'square',
+		imageOffsetX:-1.5,
+		imageOffsetY:-2,
+		type:'static',
+		active:false,
+		width:75,
+		height:24,
+});
+
+function create_game_over(){
+	var i=0;
+	var gameover = world.createEntity({
+		image:'0923detail/gameover.png',
+		spriteSheet:true,
+		spriteWidth:600,
+		spriteHeight:70,
+		x:13,
+		y:10,
+		imageStretchToFit:true,
+		shape:'square',
+		active:false,
+		width:15,
+		height:3
+	});	
+	
+	setInterval(game_over_sprite,500);
+	function game_over_sprite(){
+		if(i<1){
+			gameover.sprite(i,0);
+			i++;
+		}else{
+			gameover.sprite(i,0);
+			i=0;
+		}
+	}
+}
+
+var apple_good={
+	name:'apple_good',
+	shape:'square',
+	image:'0923detail/apple.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'dynamic',
+	width:2.1,
+	height:2.4,
+	onStartContact: 
+		function(other){		
+			if(other.name() =="cube1"){
+				player1_score+=300;
+				eat_apple.play();
+				this.destroy();
+			}else if(other.name()=="cube2"){
+				player2_score+=300;
+				eat_apple.play();
+				this.destroy();
+			}else if(other.name()=="cube3"){
+				player3_score+=300;
+				eat_apple.play();
+				this.destroy();
+			}else if(other.name()=="cube4"){
+				player4_score+=300;
+				eat_apple.play();
+				this.destroy();
+			}else if(other.name()=="ground"){
+				this.destroy();
+			}
+		},
+		
+};
+
+var apple_bad={
+	name:'apple_bad',
+	shape:'square',
+	image:'0923detail/badapple.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'dynamic',
+	width:2.1,
+	height:2.4,
+	onStartContact: 
+		function(other) {
+			if(other.name() =="cube1"){
+				if(player1_score+p1_score_dynamic>100){
+					player1_score-=100;
+					eat_bad_apple.play();
+					this.destroy();	
+				}
+			}else if(other.name()=="cube2"){
+				if(player2_score+p2_score_dynamic>100){
+					player2_score-=100;
+					eat_bad_apple.play();
+					this.destroy();	
+				}	
+			}else if(other.name()=="cube3"){
+				if(player3_score+p3_score_dynamic>100){
+					player3_score-=100;
+					eat_bad_apple.play();
+					this.destroy();	
+				}	
+			}else if(other.name()=="cube4"){
+				if(player4_score+p4_score_dynamic>100){
+					player4_score-=100;
+					eat_bad_apple.play();
+					this.destroy();	
+				}	
+			}else if(other.name()=="ground"){
+				this.destroy();
+			}
+		},
+};
+
+setInterval(apple_create,2000);
+
+
+var apple_random;
+var apple_posX;
+var apple_posY=3;
+
+setInterval(apple_random_number,500);
+
+function apple_random_number(){
+	apple_random=Math.random()*10+1;
+	apple_posX=Math.random()*25+5;
+}
+
+function apple_create(){
+	if(stop==0){
+		if(apple_random<6){
+			world.createEntity(apple_good,{x:apple_posX,y:apple_posY,imageOffsetX:-1.55,imageOffsetY:-0.5});
+			bloop_out.play();
+		}else{
+			world.createEntity(apple_bad,{x:apple_posX,y:apple_posY,imageOffsetX:-1.55,imageOffsetY:-0.5});
+			bloop_out.play();
+		}
+	}	
+}
+
+
+var b=0;
+
+setInterval(change_bg,10000);
+
+function change_bg(){
+	if(b>=3){
+		b=0;	
+	}else{
+		background.sprite(b,0);
+		b++;
+	}
+}
+
+setInterval(change_sprite1,30000);
+setInterval(change_sprite2,60000);
+
+function change_sprite1(){
+	background.image("0923detail/background02.png");
+}
+
+function change_sprite2(){
+	background.image("0923detail/background01.png");
+}
+
+/*var platform = {
+		name: 'platform',
+		image:'0923detail/platform.png',
+		imageStretchToFit:true,
+        type: 'static',
+        height: 0.5,
+		width:7,
+        color:'purple',
+    };
+*/
+
+var l_thorn = {
+		name: 'l_thorn',
+		image:'0923detail/l_thorn.png',
+		imageStretchToFit:true,
+        type: 'static',
+        //height: 10,
+		width:1,
+        color:'purple',
+		//imageOffsetX:-2,
+		onStartContact: 
+		function(other) {
+			if(other.name() == "cube1"){
+				cat_hurts.play();
+				if(player1_score+p1_score_dynamic>100){
+					player1_score-=100;
+				}
+			}else if(other.name()=="cube2"){
+				monkey_hurts.play();
+				if(player2_score+p2_score_dynamic>100){
+					player2_score-=100;
+				}
+			}else if(other.name()=="cube3"){
+				pig_hurts.play();
+				if(player3_score+p3_score_dynamic>100){
+					player3_score-=100;
+				}
+			}else if(other.name()=="cube4"){
+				rabbit_hurts.play();
+				if(player4_score+p4_score_dynamic>100){
+					player4_score-=100;
+				}
+			}
+		},
+    };
+	
+var r_thorn = {
+		name: 'r_thorn',
+		image:'0923detail/r_thorn.png',
+		imageStretchToFit:true,
+        type: 'static',
+        //height: 10,
+		width:1,
+        color:'purple',
+		//imageOffsetX:-0.5,
+		onStartContact: 
+		function(other) {
+			if(other.name() == "cube1"){
+				cat_hurts.play();
+				if(player1_score>0){
+					player1_score-=100;
+				}
+			}else if(other.name()=="cube2"){
+				monkey_hurts.play();
+				if(player2_score>0){
+					player2_score-=100;
+				}
+			}else if(other.name()=="cube3"){
+				pig_hurts.play();
+				if(player3_score>0){
+					player3_score-=100;
+				}
+			}else if(other.name()=="cube4"){
+				rabbit_hurts.play();
+				if(player4_score>0){
+					player4_score-=100;
+				}
+			}
+		},
+    };
+
+var random_jump=0;
+var random_shape=1;
+var random_color=1;
+var counter=0;
+var random_radius;
+var random_score;
+
+var p1_score_dynamic=0;
+var p2_score_dynamic=0;
+var p3_score_dynamic=0;
+var p4_score_dynamic=0;
+
+var contact_sparkle = {
+		name: 'sparkle',
+        type: 'dynamic',
+        height:.3,
+		width:.3,
+		onStartContact: 
+		function(other) {				
+			if(other.name() =="cube1" ||other.name() =="cube2" || other.name() =="cube3" || other.name() =="cube4"|| other.name() =="ground"|| other.name() =="wall-right"|| other.name() =="wall-left"){
+				this.applyImpulse(5,random_jump);
+			}
+			if(other.name() =="wall-right"|| other.name() =="wall-left"||other.name()=="l_thorn"||other.name()==r_thorn||other.name()=="ground"||other.name()=="ceiling"){
+				bubble.play();
+			}
+			if(other.name() == "cube1"){		
+				p1_score_dynamic+=random_score;
+			}else if(other.name()=="cube2"){		
+				p2_score_dynamic+=random_score;
+			}else if(other.name()=="cube3"){				
+				p3_score_dynamic+=random_score;
+			}else if(other.name()=="cube4"){
+				p4_score_dynamic+=random_score;
+			}
+			if(counter%10==0){
+				this.destroy();
+			}
+		},
+    };
+
+	setInterval(myTimer,1000);
+	setInterval(random_change_score,100);
+	
+	function myTimer(){
+		counter+=1;
+		random_radius=Math.random()*0.2+0.1;
+	}
+	
+	function random_change_score(){
+		random_score=Math.floor(Math.random()*10+1);
+	}
+
+	
+/*world.createEntity(platform,{x:4.25,y:10,imageOffsetX:-2.825,});
+world.createEntity(platform,{x:15,y:9,imageOffsetX:-2.825,});
+world.createEntity(platform,{x:26,y:8,imageOffsetX:-2.825,});
+*/
+
+world.createEntity(r_thorn,{x:1,y:15,height:10,imageOffsetX:-0.5,imageOffsetY:-2.5});
+world.createEntity(l_thorn,{x:34.5,y:7.5,height:10,imageOffsetX:-2,imageOffsetY:-2.5});
+
+world.createEntity({
+	name:'ground',
+	shape:'square',
+	color:'yellow',
+	type:'static',
+	width:40,
+	height:.5,
+	x:15,
+	y:20,
+});
+
+
+var wall_left={
+	name:'wall-left',
+	image:'0923detail/border.jpg',
+	imageStretchToFit:true,
+	shape:'square',
+	color:'yellow',
+	type:'static',
+	width:.25,
+	height:24,
+};
+
+var wall_right={
+	name:'wall-right',
+	shape:'square',
+	image:'0923detail/border.jpg',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'static',
+	width:.25,
+	height:24,
+};
+
+world.createEntity({
+	name:'ceiling',
+	shape:'square',
+	color:'yellow',
+	type:'static',
+	width:40,
+	height:5,
+	x:15,
+	y:0,
+});
+
+world.createEntity(wall_left,{x:0.5,y:5,imageOffsetX:-0.5});
+world.createEntity(wall_right,{x:34.7,y:5,imageOffsetX:-1.5});
+
+var p1_sprite_walk=0;
+var p1_sprite_jump=3;
+var p2_sprite_walk=0;
+var p2_sprite_jump=3;
+var p3_sprite_walk=0;
+var p3_sprite_jump=3;
+var p4_sprite_walk=0;
+var p4_sprite_jump=3;
+
+var player1_score=0;
+var player2_score=0;
+var player3_score=0;
+var player4_score=0;
+
+
+player1=world.createEntity({
+	name:'cube1',
+	shape: 'square',
+	color:'blue',
+	image:'0923detail/cube1.png',
+	spriteSheet:true,
+	spriteWidth:170,
+	spriteHeight:210,
+	imageStretchToFit:true,	
+	imageOffsetX:-1.8,
+	imageOffsetY:-0.7,
+	width:3,
+	height:3,
+	x:6,
+	y:15,
+	friction:1,
+	type:'dynamic',
+	restitution:0,
+	fixedRotation:true,
+	onStartContact: 
+	function(other) {
+		var p1_pos=player1.position();
+		if(other.name() =="cube1" || other.name() =="cube2" || other.name() =="cube3" || other.name() =="cube4"){
+			if(random_shape==1){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'red'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'gray'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'black'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'yellow'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+3,y:p1_pos.y-1.5,shape:"square",color:'orange'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'green'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'purple'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"square",color:'white'});
+					random_shape+=1;
+					random_color=1;
+				}
+			}else if(random_shape==2){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'red',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'blue',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'black',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'yellow',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'orange',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'green',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'purple',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p1_pos.x+1.5,y:p1_pos.y-1.5,shape:"circle",color:'white',radius:random_radius});
+					random_shape=1;
+					random_color=1;
+				}
+			}
+		}
+		
+		if(other.name()=="l_thorn"){
+			this.applyImpulse(500,270);
+		}else if(other.name()=="r_thorn"){
+			this.applyImpulse(500,90);
+		}
+    },
+	onKeyDown:
+	function(f) {	
+		if (f.keyCode == "100") {
+			this.applyImpulse(75, 270);	
+			if(p1_sprite_walk==0){
+				this.sprite(0,0);
+				p1_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p1_sprite_walk=0;
+			}					
+		}
+		if (f.keyCode == "104") {	
+			this.applyImpulse(75, 0);
+			if(p1_sprite_jump==3){
+				this.sprite(2,0);
+				p1_sprite_jump++;
+			}else if(p1_sprite_jump==4){
+				this.sprite(3,0);
+				p1_sprite_jump++;
+			}else{
+				this.sprite(4,0);
+				p1_sprite_jump=3;
+			}	
+		}
+		if (f.keyCode == "102") {
+			this.applyImpulse(75, 90);
+			if(p1_sprite_walk==0){
+				this.sprite(0,0);
+				p1_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p1_sprite_walk=0;
+			}	
+		}
+	},
+	onKeyup:function(f){
+		this.applyImpulse(0,0);
+	}
+});
+
+player2=world.createEntity({
+	name:'cube2',
+	shape: 'square',
+	color:'black',
+	image:'0923detail/cube2.png',
+	spriteSheet:true,
+	spriteWidth:170,
+	spriteHeight:210,
+	imageStretchToFit:true,	
+	imageOffsetX:-1.8,
+	imageOffsetY:-0.7,
+	width:3,
+	height:3,
+	x:12,
+	y:15,
+	friction:1,
+	type:'dynamic',
+	restitution:0,
+	fixedRotation:true,
+	onStartContact: 
+	function(other) {
+		var p2_pos=player2.position();
+		if(other.name() =="cube1" || other.name() =="cube2" || other.name() =="cube3" || other.name() =="cube4"){
+			if(random_shape==1){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'red'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'blue'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'black'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'yellow'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'orange'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'green'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'purple'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"square",color:'white'});
+					random_shape+=1;
+					random_color=1;
+				}
+			}else if(random_shape==2){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'red',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'blue',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'black',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'yellow',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'orange',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'green',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'purple',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p2_pos.x+3,y:p2_pos.y-1.5,shape:"circle",color:'white',radius:random_radius});
+					random_shape=1;
+					random_color=1;
+				}
+			}	
+		}
+		if(other.name()=="l_thorn"){
+			this.applyImpulse(500,270);
+		}else if(other.name()=="r_thorn"){
+			this.applyImpulse(500,90);
+		}
+    },
+	onKeyDown:
+	function(f) {	
+		if (f.keyCode == "65") {
+			this.applyImpulse(75, 270);	
+			if(p2_sprite_walk==0){
+				this.sprite(0,0);
+				p2_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p2_sprite_walk=0;
+			}			
+		}
+		if (f.keyCode == "87") {	
+			this.applyImpulse(75, 0);
+			if(p2_sprite_jump==3){
+				this.sprite(2,0);
+				p2_sprite_jump++;
+			}else if(p2_sprite_jump==4){
+				this.sprite(3,0);
+				p2_sprite_jump++;
+			}else{
+				this.sprite(4,0);
+				p2_sprite_jump=3;
+			}	
+		}
+		if (f.keyCode == "68") {
+			this.applyImpulse(75, 90);
+			if(p2_sprite_walk==0){
+				this.sprite(0,0);
+				p2_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p2_sprite_walk=0;
+			}			
+		}
+	},
+	onKeyup:function(f){
+		this.applyImpulse(0,0);
+	}
+});
+
+player3=world.createEntity({
+	name:'cube3',
+	shape: 'square',
+	color:'black',
+	image:'0923detail/cube3.png',
+	spriteSheet:true,
+	spriteWidth:170,
+	spriteHeight:210,
+	imageStretchToFit:true,	
+	imageOffsetX:-1.8,
+	imageOffsetY:-0.7,
+	width:3,
+	height:3,
+	x:18,
+	y:15,
+	friction:1,
+	type:'dynamic',
+	restitution:0,
+	fixedRotation:true,
+	onStartContact: 
+	function(other) {
+		var p3_pos=player3.position();
+		if(other.name() =="cube1" || other.name() =="cube2" || other.name() =="cube3" || other.name() =="cube4"){
+			if(random_shape==1){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'red'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'blue'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'black'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'yellow'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'orange'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'green'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'purple'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"square",color:'white'});
+					random_shape+=1;
+					random_color=1;
+				}
+			}else if(random_shape==2){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'red',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'blue',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'black',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'yellow',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'orange',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'green',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'purple',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p3_pos.x+3,y:p3_pos.y-1.5,shape:"circle",color:'white',radius:random_radius});
+					random_shape=1;
+					random_color=1;
+				}
+			}	
+		}	
+		if(other.name()=="l_thorn"){
+			this.applyImpulse(500,270);
+		}else if(other.name()=="r_thorn"){
+			this.applyImpulse(500,90);
+		}
+    },
+	onKeyDown:
+	function(f) {	
+		if (f.keyCode == "37") {
+			this.applyImpulse(75, 270);	
+			if(p3_sprite_walk==0){
+				this.sprite(0,0);
+				p3_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p3_sprite_walk=0;
+			}			
+		}
+		if (f.keyCode == "38") {	
+			this.applyImpulse(75, 0);
+			if(p3_sprite_jump==3){
+				this.sprite(2,0);
+				p3_sprite_jump++;
+			}else if(p3_sprite_jump==4){
+				this.sprite(3,0);
+				p3_sprite_jump++;
+			}else{
+				this.sprite(4,0);
+				p3_sprite_jump=3;
+			}		
+		}
+		if (f.keyCode == "39") {
+			this.applyImpulse(75, 90);
+			if(p3_sprite_walk==0){
+				this.sprite(0,0);
+				p3_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p3_sprite_walk=0;
+			}			
+		}
+	},
+	onKeyup:function(f){
+		this.applyImpulse(0,0);
+	}
+});
+
+player4=world.createEntity({
+	name:'cube4',
+	shape: 'square',
+	color:'black',
+	image:'0923detail/cube4.png',
+	imageStretchToFit:true,	
+	spriteSheet:true,
+	spriteWidth:170,
+	spriteHeight:210,
+	imageOffsetX:-1.8,
+	imageOffsetY:-0.7,
+	width:3,
+	height:3,
+	x:24,
+	y:15,
+	friction:1,
+	type:'dynamic',
+	restitution:0,
+	fixedRotation:true,
+	onStartContact: 
+	function(other) {
+		var p4_pos=player4.position();
+		if(other.name() =="cube1" || other.name() =="cube2" || other.name() =="cube3" || other.name() =="cube4"){
+			if(random_shape==1){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'red'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'blue'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'black'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'yellow'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'orange'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'green'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'purple'});
+					random_shape+=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"square",color:'white'});
+					random_shape+=1;
+					random_color=1;
+				}
+			}else if(random_shape==2){
+				if(random_color==1){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'red',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==2){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'blue',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==3){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'black',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==4){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'yellow',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==5){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'orange',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==6){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'green',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==7){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'purple',radius:random_radius});
+					random_shape=1;
+					random_color+=1;
+				}else if(random_color==8){
+					world.createEntity(contact_sparkle,{x:p4_pos.x+3,y:p4_pos.y-1.5,shape:"circle",color:'white',radius:random_radius});
+					random_shape=1;
+					random_color=1;
+				}
+			}	
+		}
+		if(other.name()=="l_thorn"){
+			this.applyImpulse(500,270);
+		}else if(other.name()=="r_thorn"){
+			this.applyImpulse(500,90);
+		}
+    },
+	onKeyDown:
+	function(f) {	
+		if (f.keyCode == "72") {
+			this.applyImpulse(75, 270);
+			if(p4_sprite_walk==0){
+				this.sprite(0,0);
+				p4_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p4_sprite_walk=0;
+			}			
+		}
+		if (f.keyCode == "85") {	
+			this.applyImpulse(75, 0);
+			if(p4_sprite_jump==3){
+				this.sprite(2,0);
+				p4_sprite_jump++;
+			}else if(p4_sprite_jump==4){
+				this.sprite(3,0);
+				p4_sprite_jump++;
+			}else{
+				this.sprite(4,0);
+				p4_sprite_jump=3;
+			}			
+		}
+		if (f.keyCode == "75") {
+			this.applyImpulse(75, 90);
+			if(p4_sprite_walk==0){
+				this.sprite(0,0);
+				p4_sprite_walk++;
+			}else{
+				this.sprite(1,0);
+				p4_sprite_walk=0;
+			}
+		}
+	},
+	onKeyup:function(f){
+		this.applyImpulse(0,0);
+	}
+});
+
+var chart1={
+	name:'chart1',
+	shape:'square',
+	image:'0923detail/animals/1.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'static',
+	width:2,
+	height:2,
+	x:1,
+	y:0.7
+};
+
+var chart2={
+	name:'chart2',
+	shape:'square',
+	image:'0923detail/animals/4.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'static',
+	width:2,
+	height:2,
+	x:7.5,
+	y:0.7
+};
+
+var chart3={
+	name:'chart3',
+	shape:'square',
+	image:'0923detail/animals/3.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'static',
+	width:2,
+	height:2,
+	x:14,
+	y:0.7
+};
+
+var chart4={
+	name:'chart4',
+	shape:'square',
+	image:'0923detail/animals/2.png',
+	imageStretchToFit:true,
+	color:'yellow',
+	type:'static',
+	width:2,
+	height:2,
+	x:20.5,
+	y:0.7
+};
+
+world.createEntity(chart1);
+world.createEntity(chart2);
+world.createEntity(chart3);
+world.createEntity(chart4);
+
+var score1_1=world.createEntity({
+	name:'score1_1',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:3,
+	y:1
+});
+
+var score1_2=world.createEntity({
+	name:'score1_2',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:4,
+	y:1
+});
+
+var score1_3=world.createEntity({
+	name:'score1_3',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:5,
+	y:1
+});
+
+var score1_4=world.createEntity({
+	name:'score1_4',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:6,
+	y:1
+});
+
+var score2_1=world.createEntity({
+	name:'score2_1',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:9.5,
+	y:1
+});
+
+var score2_2=world.createEntity({
+	name:'score2_2',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:10.5,
+	y:1
+});
+
+var score2_3=world.createEntity({
+	name:'score2_3',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:11.5,
+	y:1
+});
+
+var score2_4=world.createEntity({
+	name:'score2_4',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:12.5,
+	y:1
+});
+
+var score3_1=world.createEntity({
+	name:'score3_1',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:16,
+	y:1
+});
+
+var score3_2=world.createEntity({
+	name:'score3_2',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:17,
+	y:1
+});
+
+var score3_3=world.createEntity({
+	name:'score3_3',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:18,
+	y:1
+});
+
+var score3_4=world.createEntity({
+	name:'score3_4',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:19,
+	y:1
+});
+
+
+var score4_1=world.createEntity({
+	name:'score4_1',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:22.5,
+	y:1
+});
+
+var score4_2=world.createEntity({
+	name:'score4_2',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:23.5,
+	y:1
+});
+
+var score4_3=world.createEntity({
+	name:'score4_3',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:24.5,
+	y:1
+});
+
+var score4_4=world.createEntity({
+	name:'score4_4',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50,
+	color:'yellow',
+	type:'static',
+	width:0.8,
+	height:1,
+	x:25.5,
+	y:1
+});
+
+setInterval(check_score_normal,100);
+setInterval(check_score_dynamic,100);
+
+function check_score_dynamic(){
+	if(p1_score_dynamic<10){
+		score1_3.sprite(0,0);
+		score1_4.sprite(p1_score_dynamic%10,0);
+	}else if(p1_score_dynamic>=10 && p1_score_dynamic<20){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(1,0);
+	}else if(p1_score_dynamic>=20 && p1_score_dynamic<30){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(2,0);
+	}else if(p1_score_dynamic>=30 && p1_score_dynamic<40){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(3,0);
+	}else if(p1_score_dynamic>=40 && p1_score_dynamic<50){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(4,0);
+	}else if(p1_score_dynamic>=50 && p1_score_dynamic<60){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(5,0);
+	}else if(p1_score_dynamic>=60 && p1_score_dynamic<70){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(6,0);
+	}else if(p1_score_dynamic>=70 && p1_score_dynamic<80){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(7,0);
+	}else if(p1_score_dynamic>=80 && p1_score_dynamic<90){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(8,0);
+	}else if(p1_score_dynamic>=90 && p1_score_dynamic<100){
+		score1_3.sprite(p1_score_dynamic%10,0);
+		score1_4.sprite(9,0);
+	}else if(p1_score_dynamic>=100){
+		player1_score+=100;
+		p1_score_dynamic=0;
+		score1_3.sprite(0,0);
+		score1_4.sprite(0,0);
+	}
+	
+	if(p2_score_dynamic<10){
+		score2_3.sprite(0,0);
+		score2_4.sprite(p2_score_dynamic%10,0);
+	}else if(p2_score_dynamic>=10 && p2_score_dynamic<20){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(1,0);
+	}else if(p2_score_dynamic>=20 && p2_score_dynamic<30){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(2,0);
+	}else if(p2_score_dynamic>=30 && p2_score_dynamic<40){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(3,0);
+	}else if(p2_score_dynamic>=40 && p2_score_dynamic<50){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(4,0);
+	}else if(p2_score_dynamic>=50 && p2_score_dynamic<60){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(5,0);
+	}else if(p2_score_dynamic>=60 && p2_score_dynamic<70){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(6,0);
+	}else if(p2_score_dynamic>=70 && p2_score_dynamic<80){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(7,0);
+	}else if(p2_score_dynamic>=80 && p2_score_dynamic<90){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(8,0);
+	}else if(p2_score_dynamic>=90 && p2_score_dynamic<100){
+		score2_3.sprite(p2_score_dynamic%10,0);
+		score2_4.sprite(9,0);
+	}else if(p2_score_dynamic>=100){
+		player2_score+=100;
+		p2_score_dynamic=0;
+		score2_3.sprite(0,0);
+		score2_4.sprite(0,0);
+	}
+	
+	if(p3_score_dynamic<10){
+		score3_3.sprite(0,0);
+		score3_4.sprite(p3_score_dynamic%10,0);
+	}else if(p3_score_dynamic>=10 && p3_score_dynamic<20){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(1,0);
+	}else if(p3_score_dynamic>=20 && p3_score_dynamic<30){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(2,0);
+	}else if(p3_score_dynamic>=30 && p3_score_dynamic<40){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(3,0);
+	}else if(p3_score_dynamic>=40 && p3_score_dynamic<50){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(4,0);
+	}else if(p3_score_dynamic>=50 && p3_score_dynamic<60){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(5,0);
+	}else if(p3_score_dynamic>=60 && p3_score_dynamic<70){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(6,0);
+	}else if(p3_score_dynamic>=70 && p3_score_dynamic<80){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(7,0);
+	}else if(p3_score_dynamic>=80 && p3_score_dynamic<90){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(8,0);
+	}else if(p3_score_dynamic>=90 && p3_score_dynamic<100){
+		score3_3.sprite(p3_score_dynamic%10,0);
+		score3_4.sprite(9,0);
+	}else if(p3_score_dynamic>=100){
+		player3_score+=100;
+		p3_score_dynamic=0;
+		score3_3.sprite(0,0);
+		score3_4.sprite(0,0);
+	}
+	
+	if(p4_score_dynamic<10){
+		score4_3.sprite(0,0);
+		score4_4.sprite(p4_score_dynamic%10,0);
+	}else if(p4_score_dynamic>=10 && p4_score_dynamic<20){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(1,0);
+	}else if(p4_score_dynamic>=20 && p4_score_dynamic<30){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(2,0);
+	}else if(p4_score_dynamic>=30 && p4_score_dynamic<40){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(3,0);
+	}else if(p4_score_dynamic>=40 && p4_score_dynamic<50){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(4,0);
+	}else if(p4_score_dynamic>=50 && p4_score_dynamic<60){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(5,0);
+	}else if(p4_score_dynamic>=60 && p4_score_dynamic<70){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(6,0);
+	}else if(p4_score_dynamic>=70 && p4_score_dynamic<80){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(7,0);
+	}else if(p4_score_dynamic>=80 && p4_score_dynamic<90){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(8,0);
+	}else if(p4_score_dynamic>=90 && p4_score_dynamic<100){
+		score4_3.sprite(p4_score_dynamic%10,0);
+		score4_4.sprite(9,0);
+	}else if(p4_score_dynamic>=100){
+		player4_score+=100;
+		p4_score_dynamic=0;
+		score4_3.sprite(0,0);
+		score4_4.sprite(0,0);
+	}
+
+
+
+}
+
+
+function check_score_normal(){
+	if(player1_score<1000 && player1_score>99){
+		score1_1.sprite(0,0);
+		score1_2.sprite((player1_score/100)%10,0);
+	}else if(player1_score>=1000 && player1_score<2000){
+		score1_2.sprite((player1_score/100)%10,0);
+		score1_1.sprite(1,0);
+	}else if(player1_score>=2000 && player1_score<3000){
+		score1_2.sprite((player1_score/100)%10,0);
+		score1_1.sprite(2,0);
+	}else if(player1_score>=3000 && player1_score<4000){
+		score1_2.sprite((player1_score/100)%10,0);
+		score1_1.sprite(3,0);
+	}else if(player1_score>=4000 && player1_score<5000){
+		score1_2.sprite((player1_score/100)%10,0);
+		score1_1.sprite(4,0);
+	}else if(player1_score>=5000 && player1_score<6000){
+		score1_2.sprite((player1_score/100)%10,0);
+		score1_1.sprite(5,0);
+	}else if(player1_score<99){
+		score1_2.sprite(0,0);
+	}
+	
+	if(player2_score<1000&& player2_score>99){
+		score2_1.sprite(0,0);
+		score2_2.sprite((player2_score/100)%10,0);
+	}else if(player2_score>=1000 && player2_score<2000){
+		score2_2.sprite((player2_score/100)%10,0);
+		score2_1.sprite(1,0);
+	}else if(player2_score>=2000 && player2_score<3000){
+		score2_2.sprite((player2_score/100)%10,0);
+		score2_1.sprite(2,0);
+	}else if(player2_score>=3000 && player2_score<4000){
+		score2_2.sprite((player2_score/100)%10,0);
+		score2_1.sprite(3,0);
+	}else if(player2_score>=4000 && player2_score<5000){
+		score2_2.sprite((player2_score/100)%10,0);
+		score2_1.sprite(4,0);
+	}else if(player2_score>=5000 && player2_score<6000){
+		score2_2.sprite((player2_score/100)%10,0);
+		score2_1.sprite(5,0);
+	}else if(player2_score<99){
+		score2_2.sprite(0,0);
+	}
+	
+	if(player3_score<1000&& player3_score>99){
+		score3_1.sprite(0,0);
+		score3_2.sprite((player3_score/100)%10,0);
+	}else if(player3_score>=1000 && player3_score<2000){
+		score3_2.sprite((player3_score/100)%10,0);
+		score3_1.sprite(1,0);
+	}else if(player3_score>=2000 && player3_score<3000){
+		score3_2.sprite((player3_score/100)%10,0);
+		score3_1.sprite(2,0);
+	}else if(player3_score>=3000 && player3_score<4000){
+		score3_2.sprite((player3_score/100)%10,0);
+		score3_1.sprite(3,0);
+	}else if(player3_score>=4000 && player3_score<5000){
+		score3_2.sprite((player3_score/100)%10,0);
+		score3_1.sprite(4,0);
+	}else if(player3_score>=5000 && player3_score<6000){
+		score3_2.sprite((player3_score/100)%10,0);
+		score3_1.sprite(5,0);
+	}else if(player3_score<99){
+		score3_2.sprite(0,0);
+	}
+	
+	if(player4_score<1000&& player4_score>99){
+		score4_2.sprite((player4_score/100)%10,0);
+	}else if(player4_score>=1000 && player4_score<2000){
+		score4_2.sprite((player4_score/100)%10,0);
+		score4_1.sprite(1,0);
+	}else if(player4_score>=2000 && player4_score<3000){
+		score4_2.sprite((player4_score/100)%10,0);
+		score4_1.sprite(2,0);
+	}else if(player4_score>=3000 && player4_score<4000){
+		score4_2.sprite((player4_score/100)%10,0);
+		score4_1.sprite(3,0);
+	}else if(player4_score>=4000 && player4_score<5000){
+		score4_2.sprite((player4_score/100)%10,0);
+		score4_1.sprite(4,0);
+	}else if(player4_score>=5000 && player4_score<6000){
+		score4_2.sprite((player4_score/100)%10,0);
+		score4_1.sprite(5,0);
+	}else if(player4_score<99){
+		score4_2.sprite(0,0);
+	}
+}
+
+
+var timer_count_third=9;
+var timer_count_fourth=0;
+var timer_second_ca=8;
+
+var timer_number_fourth=world.createEntity({
+	name:'timer_number_third',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50.158,
+	color:'yellow',
+	type:'static',
+	width:1,
+	height:1.25,
+	x:32,
+	y:1,
+});
+
+var timer_number_third=world.createEntity({
+	name:'timer_number_third',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50.158,
+	color:'yellow',
+	type:'static',
+	width:1,
+	height:1.25,
+	x:30.5,
+	y:1,
+});
+
+timer_number_third.sprite(0,0);
+
+var timer_number_second=world.createEntity({
+	name:'timer_number_second',
+	shape:'square',
+	image:'0923detail/number.png',
+	imageStretchToFit:true,
+	spriteSheet:true,
+	spriteHeight:80,
+	spriteWidth:50.158,
+	color:'yellow',
+	type:'static',
+	width:1,
+	height:1.25,
+	x:29,
+	y:1,
+});
+
+timer_number_second.sprite(9,0);
+timer_number_third.sprite(9,0);
+timer_number_fourth.sprite(9,0);
+
+function timer_fourth(){	
+	if(stop==0){
+		if(timer_second_ca==8){
+			timer_number_fourth.sprite(0,0);
+		}
+		if(timer_count_fourth<=9 && timer_count_fourth>=0){
+			timer_number_fourth.sprite(timer_count_fourth,0);
+			timer_count_fourth--;
+		}
+	}
+}
+
+function timer_third(){	
+	if(stop==0){
+		if(timer_second_ca==8){
+			timer_number_third.sprite(9,0);
+			timer_number_second.sprite(9,0);
+		}
+		if(timer_count_third<=9 && timer_count_third>=0){
+			timer_number_third.sprite(timer_count_third,0);
+			timer_count_third--;
+			timer_count_fourth=9;
+		}
+	}
+}
+
+function timer_second(){
+	if(stop==0){
+			timer_count_third=9;
+			timer_number_second.sprite(timer_second_ca,0);
+			timer_number_third.sprite(0,0);
+			timer_second_ca--;
+	}
+}
+
+function timer_stop(){
+	var winner=world.createEntity({
+		name:'winner',
+		shape:'square',
+		imageStretchToFit:true,
+		spriteSheet:true,
+		spriteHeight:210,
+		spriteWidth:170,
+		color:'yellow',
+		type:'static',
+		width:9,
+		height:9,
+		x:14,
+		y:10,	
+	});
+	var player1_score_sum=player1_score+p1_score_dynamic;
+	var player2_score_sum=player2_score+p2_score_dynamic;
+	var player3_score_sum=player3_score+p3_score_dynamic;
+	var player4_score_sum=player4_score+p4_score_dynamic;
+	var max_score=Math.max(player1_score_sum,player2_score_sum,player3_score_sum,player4_score_sum);
+	
+	if(max_score==player1_score_sum && max_score>0){
+		winner.image("0923detail/cube1.png");
+		cat_hurts.play();
+	}else if(max_score==player2_score_sum && max_score>0){
+		winner.image("0923detail/cube2.png");
+		monkey_hurts.play();
+	}else if(max_score==player3_score_sum && max_score>0){
+		winner.image("0923detail/cube3.png");
+		pig_hurts.play();
+	}else if(max_score==player4_score_sum && max_score>0){
+		winner.image("0923detail/cube4.png");
+		rabbit_hurts.play();
+	}else{
+		winner.image("0923detail/kuso.png");
+	}
+	stop++;
+	timer_number_second.sprite(0,0);
+	timer_number_third.sprite(0,0);
+	timer_number_fourth.sprite(0,0);
+	bgm.stop();
+	
+	create_game_over();
+	
+	setInterval(reload_page,20000);
+}
+
+function reload_page(){
+	location.reload(true);
+}
+
+</script>
+
+</canvas>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,100 @@
+﻿@charset "utf-8";
+/* CSS Document */
+
+*{
+	padding: 0px;
+	margin:0px;
+	font-family:"Microsoft JhengHei","Times New Roman",Georgia,Serif;
+	}
+body
+{ 
+	width: 100%;
+	height: 100%;
+	text-align:center;
+	background-image:url(/images/bg.jpg);
+	-moz-background-size: cover;
+	background-size: cover; 
+}
+
+#in_front_1{
+	clear: both;	
+	height: auto;
+	margin: auto;
+	width: 100%;
+	text-align:center;
+	font-size: 27px;
+	color:balck;
+	font-family: "新細明體";
+}
+
+
+
+div.in_front_2{
+	clear: both;
+	width: 100%;
+	font-family: "新細明體";
+	text-align: center;
+	height: auto;
+	margin: auto;
+	font-size:20px;
+}
+
+
+#in_front_3{
+	clear: both;
+	width: 100%;
+	height: 45px;
+	line-height: 45px;
+	background-color: black;
+	position: absolute;
+	bottom: 0px;
+	font-size: 14px;
+	color: #FFFFFF;
+	font-family: "新細明體";
+	margin: auto;
+}
+
+.pg1{
+	width: 25%;
+	float: left;
+	margin: auto;
+	height: 230px;
+	}
+.pg2{
+	text-align: center;
+	width: 380px;
+	margin: 0px auto;
+	height: auto;
+	
+	}
+.imgleft{
+
+	float:left; 
+	margin: 15px;
+	margin-left: 30px;
+	
+	}
+	
+.pimg{
+	padding: 1px; 
+	text-align: left;
+	
+	}
+	
+.play{
+	
+	filter:Alpha(Opacity=80);
+-moz-opacity:0.8;
+opacity:0.8;
+	
+	    -webkit-filter: grayscale(100%);
+    -moz-filter: grayscale(100%);
+    -ms-filter: grayscale(100%);
+    -o-filter: grayscale(100%);
+    
+    filter: grayscale(100%);
+	
+    filter: gray;
+	
+	}
+#gamecode{font-size:25px;}
